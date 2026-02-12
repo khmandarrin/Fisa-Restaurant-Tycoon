@@ -5,7 +5,6 @@ target/
 *.ear
 *.zip
 *.tar.gz
-*.DS_Store
 
 # Eclipse
 .settings/
@@ -23,5 +22,6 @@ temp/
 .mvn/wrapper/
 maven-shared-archive-resources/
 
-/assets
-*.DS_Store
+/assets/.DS_Store
+
+.DS_Store
