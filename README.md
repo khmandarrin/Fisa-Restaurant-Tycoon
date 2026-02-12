@@ -70,18 +70,19 @@ private final AtomicInteger completedCount = new AtomicInteger(0);
 
 #### 2. Synchronized
 * `ChefWorker`의 `findWork()`는 조리 시작 전 모든 메뉴 큐를 순회하며 최적의 작업을 결정하고 인출하는 탐색 메서드입니다.
-* 이 과정에서 `synchronized(queueManager)`를 통해 QueueManager가 관리하는 모든 메뉴 큐에 대한 전역 락(Global Lock)을 획득합니다.
-* 이를 통해 작업을 확인(`peek`)하고 인출(`poll`)하는 시점까지의 원자성을 보장하는 **임계 영역(Critical Section)**을 형성합니다.
+* 이 과정에서 `synchronized(allMenuQueues)`를 통해 QueueManager가 관리하는 모든 메뉴 큐에 대한 전역 락(Global Lock)을 획득합니다.
+* 이를 통해 작업을 확인(`peek`)하고 인출(`poll`)하는 시점까지의 원자성을 보장하는 임계 영역(Critical Section)을 형성합니다.
 * 동일한 주문을 여러 요리사가 동시에 수주하는 중복 점유 문제를 차단합니다.
 
 ```java
 // src/main/java/thread/ChefWorker.java
 
 private Order findWork() {
-    synchronized (queueManager) {
-        // 일감 탐색(peek) 및 인출(poll) 로직
+    ...
+    synchronized (allMenuQueues) {
+        // 2. 주문 번호 기반 일반 작업 탐색: peek and poll
+        return findEarliestOrder();
     }
-}
 ```
 
 
@@ -109,17 +110,18 @@ private final BlockingQueue<Order> queue = new LinkedBlockingQueue<>();
 // src/main/java/thread/ChefWorker.java
 
 private Order findWork() {
-    synchronized (queueManager) {
-        // 1. 큐 포화도 기반 긴급 작업 탐색
-        Order urgentOrder = findUrgentOrder();
-        if (urgentOrder != null) {
-            return urgentOrder;
-        }
 
-        // 2. 주문 번호 기반 일반 작업 탐색
+    // 1. 큐 포화도 기반 긴급 작업 탐색
+    Order urgentOrder = findUrgentOrder();
+    if (urgentOrder != null) {
+        return urgentOrder;
+    }
+
+    // 2. 주문 번호 기반 일반 작업 탐색: peek and poll
+    Map<MenuItem, OrderQueue> allMenuQueues = queueManager.getAllMenuQueues();
+    synchronized (allMenuQueues) {
         return findEarliestOrder();
     }
-}
 ```
 
 ## 5. 실행 방법 
