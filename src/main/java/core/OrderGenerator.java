@@ -35,8 +35,8 @@ public class OrderGenerator implements Runnable {
                     queueManager.getMenuQueue(item).push(newOrder);
                 }
 
-                // 3. 로그 기록 TODO: logger 사용하기
-                System.out.println("🔔 신규 주문 접수: #" + newOrder.getOrderId() + 
+                // 3. 로그 기록
+                Logger.log("신규 주문 접수: #" + newOrder.getOrderId() +
                                 " (" + newOrder.getItems().size() + "개 메뉴)");
 
                 // 4. 다음 주문까지 무작위 대기 (2초 ~ 5초)

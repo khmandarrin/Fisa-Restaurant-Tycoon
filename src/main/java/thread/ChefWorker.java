@@ -4,6 +4,7 @@ import core.QueueManager;
 import model.MenuItem;
 import model.Order;
 import model.OrderQueue;
+import view.Logger;
 
 public class ChefWorker implements Runnable {
 	
@@ -40,7 +41,7 @@ public class ChefWorker implements Runnable {
                 if (currentOrder.addItemComplete()) {
                     // 주문의 모든 메뉴 완료 → 배달 큐로
                     queueManager.getDeliveryQueue().push(currentOrder);
-                    System.out.println("[요리사#" + id + "] 주문#" + currentOrder.getOrderId() + " 조리 완료 → 배달 큐");
+                    Logger.log("[요리사#" + id + "] 주문#" + currentOrder.getOrderId() + " 조리 완료 → 배달 큐");
                 }
                 
                 // 4. 상태 초기화
@@ -64,7 +65,7 @@ public class ChefWorker implements Runnable {
             if (order != null) {
                 currentOrder = order;
                 currentMenu = menu;
-                System.out.println("[요리사#" + id + "] 주문#" + order.getOrderId() + " " + menu.getName() + " 조리 시작");
+                Logger.log("[요리사#" + id + "] 주문#" + order.getOrderId() + " " + menu.getName() + " 조리 시작");
                 return order;
             }
         }
