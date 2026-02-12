@@ -2,12 +2,14 @@ package thread;
 
 import model.Order;
 import model.OrderQueue;
-import view.Logger;
 
 public class RiderWorker implements Runnable{
 
 	private final int riderId;
 	private final OrderQueue deliveryQueue;
+  
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RiderWorker.class);
+
 	private volatile Order currentOrder;
 	private volatile boolean delivering;
 
@@ -28,14 +30,14 @@ public class RiderWorker implements Runnable{
 				delivering = true;
 
 				// 2. 배달 시작 로그 기록
-				Logger.log("#" + riderId + "번 배달 출발 (주소: " + order.getAddress() + ")");
+				logger.info("#" + riderId + "번 배달 출발 (주소: " + order.getAddress() + ")");
 
 				// 3. 배달 시간 시뮬레이션: SLEEP(랜덤 2~5초)
 				int deliveryTime = 2000 + (int)(Math.random() * 3000);
 				Thread.sleep(deliveryTime);
 
 				// 4. 배달 완료 로그 기록
-				Logger.log("#" + riderId + "번 배달 완료!");
+				logger.info("#" + riderId + "번 배달 완료!");
 
 				// 5. 상태 초기화
 				delivering = false;

@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import model.MenuItem;
 import model.Order;
-import view.Logger;
 
 public class OrderGenerator implements Runnable {
     private static final int MAX_RECENT = 5;
@@ -17,6 +16,7 @@ public class OrderGenerator implements Runnable {
     private final Random random = new Random();
     private final LinkedList<String> recentOrders = new LinkedList<>();
     private boolean running = true;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OrderGenerator.class);
 
     public OrderGenerator(QueueManager queueManager) {
         this.queueManager = queueManager;
@@ -46,7 +46,8 @@ public class OrderGenerator implements Runnable {
                         recentOrders.removeLast();
                     }
                 }
-                Logger.log("신규 주문 접수: #" + newOrder.getOrderId() +
+                // 3. 로그 기록
+                logger.info("신규 주문 접수: #" + newOrder.getOrderId() +
                                 " (" + newOrder.getItems().size() + "개 메뉴)");
 
                 // 4. 다음 주문까지 무작위 대기 (2초 ~ 5초)

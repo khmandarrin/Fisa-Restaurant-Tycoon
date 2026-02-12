@@ -4,13 +4,13 @@ import core.QueueManager;
 import model.MenuItem;
 import model.Order;
 import model.OrderQueue;
-import view.Logger;
 
 public class ChefWorker implements Runnable {
 	
     private final int id;
     private final QueueManager queueManager;
     private volatile boolean running = true;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ChefWorker.class);
     
     // 현재 상태 (대시보드용)
     private Order currentOrder;
@@ -41,7 +41,7 @@ public class ChefWorker implements Runnable {
                 if (currentOrder.addItemComplete()) {
                     // 주문의 모든 메뉴 완료 → 배달 큐로
                     queueManager.getDeliveryQueue().push(currentOrder);
-                    Logger.log("[요리사#" + id + "] 주문#" + currentOrder.getOrderId() + " 조리 완료 → 배달 큐");
+                    logger.info("[요리사#" + id + "] 주문#" + currentOrder.getOrderId() + " 조리 완료 → 배달 큐");
                 }
                 
                 // 4. 상태 초기화
@@ -56,20 +56,43 @@ public class ChefWorker implements Runnable {
         }
     }
     
+    /**
+     * 모든 메뉴 큐를 순회하며 가장 빠른 주문번호를 가진 작업을 찾아 가져온다.
+     * 
+     * <p>여러 요리사 스레드가 동시에 호출할 수 있으므로 synchronized로 동기화하여
+     * 같은 주문을 중복으로 가져가는 것을 방지한다.</p>
+     * 
+     * @return 가장 빠른 주문, 없으면 null
+     */
     private Order findWork() {
-        // 메뉴 큐 순회 (커피 → 샐러드 → 피자 → 파스타 → 뇨끼)
-        for (MenuItem menu : MenuItem.values()) {
-            OrderQueue queue = queueManager.getMenuQueue(menu);
-            Order order = queue.poll();  // non-blocking
+        synchronized (queueManager) {  // 락 걸기
+            Order earliestOrder = null;
+            MenuItem earliestMenu = null;
+            OrderQueue earliestQueue = null;
             
-            if (order != null) {
-                currentOrder = order;
-                currentMenu = menu;
-                Logger.log("[요리사#" + id + "] 주문#" + order.getOrderId() + " " + menu.getName() + " 조리 시작");
-                return order;
+            for (MenuItem menu : MenuItem.values()) {
+                OrderQueue queue = queueManager.getMenuQueue(menu);
+                Order order = queue.peek();
+                
+                if (order != null) {
+                    if (earliestOrder == null || order.getOrderId() < earliestOrder.getOrderId()) {
+                        earliestOrder = order;
+                        earliestMenu = menu;
+                        earliestQueue = queue;
+                    }
+                }
             }
+            
+            if (earliestQueue != null) {
+                earliestQueue.poll();
+                currentOrder = earliestOrder;
+                currentMenu = earliestMenu;
+                logger.info("[요리사#" + id + "] 주문#" + earliestOrder.getOrderId() + " " + earliestMenu.getName() + " 조리 시작");
+                return earliestOrder;
+            }
+            
+            return null;
         }
-        return null;
     }
     
     private void cook() throws InterruptedException {
