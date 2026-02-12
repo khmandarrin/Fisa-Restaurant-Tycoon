@@ -1,0 +1,22 @@
+# 1. 빌드 결과물 (컴파일된 파일 및 패키지)
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# Eclipse
+.settings/
+.project
+.classpath
+.factorypath
+
+# 로그 파일 및 임시 파일
+*.log
+tmp/
+temp/
+
+# Maven 관련 추가 파일
+.mvn/wrapper/
+maven-shared-archive-resources/
