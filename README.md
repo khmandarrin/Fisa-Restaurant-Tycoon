@@ -37,6 +37,7 @@ src/main/java/com/tycoon/
 ```
 
 ## 3. 시퀀스 다이어그램 
+주문 한 개 처리 상황
 
 <img src="./assets/sequence.png" width="800" alt="시퀀스다이어그램">
 
