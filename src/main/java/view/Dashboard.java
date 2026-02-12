@@ -92,7 +92,7 @@ public class Dashboard implements Runnable {
 
 		line(sb, "║  📋 " + CYAN + "주문 접수" + RESET
 			+ padRight("", LEFT_COL - 15)
-			+ "║  🔥 " + MAGENTA + "조리중" + RESET);
+			+ " ║  🔥 " + MAGENTA + "조리중" + RESET);
 
 		for (int i = 0; i < 5; i++) {
 			String left = i < recentLines.size() ? recentLines.get(i) : "";
