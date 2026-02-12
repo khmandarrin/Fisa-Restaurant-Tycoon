@@ -17,11 +17,11 @@ public class Kitchen {
 
         // 요리사 투입
         for (int i = 0; i < chefCount; i++) {
-            ChefWorker chief = new ChefWorker(i, queueManager);
-            Thread thread = new Thread(chief, "요리사#" + i);
+            ChefWorker chef = new ChefWorker(i, queueManager);
+            Thread thread = new Thread(chef, "요리사#" + i);
             thread.start();
             
-            chefs.add(chief);
+            chefs.add(chef);
             chiefThreads.add(thread);
         }
         
