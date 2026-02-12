@@ -31,19 +31,19 @@ public class Main {
 
 	        // 3. 시스템 초기화 및 의존성 주입
 	        int menuQueueSize = 10;
-	        int deliveryQueueSize = 20; // fix queue size
+	        int deliveryQueueSize = 2; // fix queue size
 	        QueueManager queueManager = new QueueManager(menuQueueSize, deliveryQueueSize);
 	        Kitchen kitchen = new Kitchen(chefCount, queueManager);
 	        DeliveryCenter deliveryCenter = new DeliveryCenter(riderCount, queueManager);
 	        OrderGenerator orderGenerator = new OrderGenerator(queueManager);
-//	        Dashboard dashboard = new Dashboard(queueManager, kitchen, deliveryCenter);
+	        Dashboard dashboard = new Dashboard(kitchen, deliveryCenter, queueManager, orderGenerator);
 
 	        // 4. 스레드 가동
 	        kitchen.startOperations();
 	        deliveryCenter.startOperations();
 	        
 	        new Thread(orderGenerator, "OrderGenerator").start();
-//	        new Thread(dashboard, "Dashboard").start();
+	        new Thread(dashboard, "Dashboard").start();
 	    
 	}
 }

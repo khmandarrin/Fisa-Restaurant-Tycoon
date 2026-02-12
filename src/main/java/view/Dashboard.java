@@ -1,6 +1,9 @@
 package view;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import core.DeliveryCenter;
 import core.Kitchen;
@@ -17,15 +20,17 @@ public class Dashboard implements Runnable {
 	private static final int COL_INNER = 22;
 	private static final int BAR_WIDTH = 10;
 	private static final int CHEF_BAR_WIDTH = 8;
+	private static final int LEFT_COL = 55;
 
 	// ANSI 색상
-	private static final String RESET  = "\033[0m";
-	private static final String BOLD   = "\033[1m";
-	private static final String RED    = "\033[31m";
-	private static final String GREEN  = "\033[32m";
-	private static final String YELLOW = "\033[33m";
-	private static final String CYAN   = "\033[36m";
-	private static final String GRAY   = "\033[90m";
+	private static final String RESET   = "\033[0m";
+	private static final String BOLD    = "\033[1m";
+	private static final String RED     = "\033[31m";
+	private static final String GREEN   = "\033[32m";
+	private static final String YELLOW  = "\033[33m";
+	private static final String MAGENTA = "\033[35m";
+	private static final String CYAN    = "\033[36m";
+	private static final String GRAY    = "\033[90m";
 
 	private final Kitchen kitchen;
 	private final DeliveryCenter deliveryCenter;
@@ -74,22 +79,29 @@ public class Dashboard implements Runnable {
 
 		// ── 타이틀 ──
 		line(sb, "╔" + sep);
-		line(sb, "║  " + BOLD + "Restaurant Tycoon" + RESET);
+		line(sb, "║  🍳 " + BOLD + "Restaurant Tycoon" + RESET + " 🍳");
 		line(sb, "╠" + sep);
 
-		// ── 최근 주문 (5줄 고정) ──
-		line(sb, "║  " + CYAN + "[주문 접수]" + RESET);
-		List<String> recent = orderGenerator.getRecentOrders();
+		// ── 주문 접수 (왼쪽) + 조리중 (오른쪽) 2열 ──
+		List<String> recentLines = new ArrayList<>();
+		for (String order : orderGenerator.getRecentOrders()) {
+			recentLines.add("🔔 " + order);
+		}
+
+		List<String> cookingLines = buildCookingOrders();
+
+		line(sb, "║  📋 " + CYAN + "주문 접수" + RESET
+			+ padRight("", LEFT_COL - 15)
+			+ "║  🔥 " + MAGENTA + "조리중" + RESET);
+
 		for (int i = 0; i < 5; i++) {
-			if (i < recent.size()) {
-				line(sb, "║    " + recent.get(i));
-			} else {
-				line(sb, "║");
-			}
+			String left = i < recentLines.size() ? recentLines.get(i) : "";
+			String right = i < cookingLines.size() ? cookingLines.get(i) : "";
+			line(sb, "║    " + padRight(left, LEFT_COL - 4) + "║    " + right);
 		}
 
 		line(sb, "╠" + sep);
-		line(sb, "║  " + BOLD + "[주방]" + RESET);
+		line(sb, "║  👨‍🍳 " + BOLD + "주방" + RESET);
 		line(sb, "║");
 
 		// ── 조리대 박스 ──
@@ -102,11 +114,11 @@ public class Dashboard implements Runnable {
 		}
 		line(sb, row.toString());
 
-		// 메뉴 이름
+		// 메뉴 이름 (이모지 포함)
 		row = new StringBuilder("║  ");
 		for (int i = 0; i < cols; i++) {
 			if (i > 0) row.append(" ");
-			row.append("│").append(centerPad(BOLD + menus[i].getName() + RESET, COL_INNER)).append("│");
+			row.append("│").append(centerPad(BOLD + menuLabel(menus[i]) + RESET, COL_INNER)).append("│");
 		}
 		line(sb, row.toString());
 
@@ -137,18 +149,16 @@ public class Dashboard implements Runnable {
 		}
 		line(sb, row.toString());
 
-		// ── 조리대 아래: 요리사 정보 (요리사 수만큼 고정 줄) ──
-		java.util.List<ChefWorker> allChefs = kitchen.getChiefs();
+		// ── 조리대 아래: 요리사 정보 ──
+		List<ChefWorker> allChefs = kitchen.getChiefs();
 		int maxChefRows = allChefs.size();
 
-		// 메뉴별 요리사 목록 수집
 		@SuppressWarnings("unchecked")
-		java.util.List<ChefWorker>[] chefsPerMenu = new java.util.List[cols];
+		List<ChefWorker>[] chefsPerMenu = new List[cols];
 		for (int i = 0; i < cols; i++) {
 			chefsPerMenu[i] = findChefsForMenu(menus[i]);
 		}
 
-		// 요리사 수만큼 줄 출력
 		for (int r = 0; r < maxChefRows; r++) {
 			row = new StringBuilder("║  ");
 			for (int i = 0; i < cols; i++) {
@@ -157,11 +167,11 @@ public class Dashboard implements Runnable {
 					ChefWorker chef = chefsPerMenu[i].get(r);
 					Order order = chef.getCurrentOrder();
 					String bar = chefProgressBar(chef.getProgress());
-					String info = YELLOW + "#" + chef.getId() + RESET
+					String info = YELLOW + "👨‍🍳#" + chef.getId() + RESET
 						+ " #" + order.getOrderId() + " " + bar;
 					row.append(padRight(info, colTotal));
 				} else if (r == 0 && chefsPerMenu[i].isEmpty()) {
-					row.append(padRight(GRAY + "비어있음" + RESET, colTotal));
+					row.append(padRight(GRAY + "💤 비어있음" + RESET, colTotal));
 				} else {
 					row.append(padRight("", colTotal));
 				}
@@ -174,12 +184,14 @@ public class Dashboard implements Runnable {
 
 		// ── 배달 ──
 		int dqSize = queueManager.getDeliveryQueue().size();
-		line(sb, "║  " + BOLD + "[배달]" + RESET + "  완성 대기: " + dqSize + "/20");
+		line(sb, "║  🛵 " + BOLD + "배달" + RESET + "  📦 완성 대기: " + dqSize + "/20");
 		for (RiderWorker rider : deliveryCenter.getRiderStatus()) {
 			if (rider.isDelivering()) {
-				line(sb, "║    " + GREEN + rider.getStatusString() + RESET);
+				line(sb, "║    🟢 " + GREEN + rider.getStatusString() + RESET);
+			} else if (rider.isJustCompleted()) {
+				line(sb, "║    ✅ " + CYAN + rider.getStatusString() + RESET);
 			} else {
-				line(sb, "║    " + GRAY + rider.getStatusString() + RESET);
+				line(sb, "║    💤 " + GRAY + rider.getStatusString() + RESET);
 			}
 		}
 
@@ -190,8 +202,38 @@ public class Dashboard implements Runnable {
 		System.out.flush();
 	}
 
-	private java.util.List<ChefWorker> findChefsForMenu(MenuItem menu) {
-		java.util.List<ChefWorker> result = new java.util.ArrayList<>();
+	// ── 조리중 주문 목록 생성 ──
+	private List<String> buildCookingOrders() {
+		List<String> result = new ArrayList<>();
+		Map<Integer, List<String>> orderChefs = new LinkedHashMap<>();
+
+		for (ChefWorker chef : kitchen.getChiefs()) {
+			if (chef.isWorking() && chef.getCurrentOrder() != null && chef.getCurrentMenu() != null) {
+				int id = chef.getCurrentOrder().getOrderId();
+				orderChefs.computeIfAbsent(id, k -> new ArrayList<>());
+				orderChefs.get(id).add(chef.getCurrentMenu().getName() + "(#" + chef.getId() + ")");
+			}
+		}
+
+		for (Map.Entry<Integer, List<String>> entry : orderChefs.entrySet()) {
+			result.add("🍳 #" + entry.getKey() + " " + String.join(", ", entry.getValue()));
+		}
+		return result;
+	}
+
+	private String menuLabel(MenuItem menu) {
+		switch (menu) {
+			case COFFEE:  return "☕ " + menu.getName();
+			case SALAD:   return "🥗 " + menu.getName();
+			case PIZZA:   return "🍕 " + menu.getName();
+			case PASTA:   return "🍝 " + menu.getName();
+			case GNOCCHI: return "🥟 " + menu.getName();
+			default:      return menu.getName();
+		}
+	}
+
+	private List<ChefWorker> findChefsForMenu(MenuItem menu) {
+		List<ChefWorker> result = new ArrayList<>();
 		for (ChefWorker chef : kitchen.getChiefs()) {
 			if (chef.isWorking() && chef.getCurrentMenu() == menu && chef.getCurrentOrder() != null) {
 				result.add(chef);
@@ -217,16 +259,26 @@ public class Dashboard implements Runnable {
 		return YELLOW + "[" + "█".repeat(filled) + "░".repeat(CHEF_BAR_WIDTH - filled) + "]" + RESET + " " + progress + "%";
 	}
 
-	// 한글 2칸, ASCII 1칸 기준 표시 너비 계산
+	// 표시 너비 계산 (한글 2칸, 이모지 2칸, ASCII 1칸)
 	private int displayWidth(String s) {
 		String stripped = s.replaceAll("\033\\[[0-9;]*m", "");
 		int width = 0;
-		for (char c : stripped.toCharArray()) {
-			if (c >= 0xAC00 && c <= 0xD7AF) {
+		for (int i = 0; i < stripped.length(); ) {
+			int cp = stripped.codePointAt(i);
+			if (cp >= 0xAC00 && cp <= 0xD7AF) {          // 한글 음절
 				width += 2;
+			} else if (cp >= 0x1F000 && cp <= 0x1FFFF) {  // 이모지 (보충 평면)
+				width += 2;
+			} else if (cp >= 0x2600 && cp <= 0x27BF) {    // 기호/딩뱃
+				width += 2;
+			} else if (cp == 0x200D) {                     // ZWJ (zero width joiner)
+				// 폭 0
+			} else if (cp >= 0xFE00 && cp <= 0xFE0F) {    // 변이 선택자
+				// 폭 0
 			} else {
 				width += 1;
 			}
+			i += Character.charCount(cp);
 		}
 		return width;
 	}

@@ -50,8 +50,8 @@ public class OrderGenerator implements Runnable {
                 logger.info("신규 주문 접수: #" + newOrder.getOrderId() +
                                 " (" + newOrder.getItems().size() + "개 메뉴)");
 
-                // 4. 다음 주문까지 무작위 대기 (2초 ~ 5초)
-                Thread.sleep(500 + random.nextInt(500));
+                // 4. 다음 주문까지 무작위 대기 (1.5초 ~ 3초)
+                Thread.sleep(1500 + random.nextInt(1500));
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
