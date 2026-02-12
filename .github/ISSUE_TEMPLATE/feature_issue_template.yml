@@ -1,0 +1,40 @@
+name: "Feature"
+description: "레스토랑 타이쿤 기능 구현용 템플릿"
+title: "feature: "
+labels: ["feature"]
+
+body:
+  - type: input
+    id: feature_name
+    attributes:
+      label: 기능 이름
+      placeholder: 예) 배달 스레드 추가
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 기능 설명
+      placeholder: 어떤 기능인지 설명해주세요.
+
+  - type: textarea
+    id: related_thread
+    attributes:
+      label: 🧵 관련 스레드
+      placeholder: 예) CookThread, DeliveryThread
+
+  - type: textarea
+    id: shared_resource
+    attributes:
+      label: 공유 자원
+      placeholder: 예) 주문 큐, 완료 큐
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: 구현 항목
+      value: |
+        - [ ] 클래스 생성
+        - [ ] 동기화 처리
+        - [ ] 테스트 코드 작성
