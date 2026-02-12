@@ -14,9 +14,9 @@ import thread.RiderWorker;
 public class Dashboard implements Runnable {
 
 	private static final int REFRESH_MS = 500;
-	private static final int COL_INNER = 14;
-	private static final int BAR_WIDTH = 8;
-	private static final int CHEF_BAR_WIDTH = 6;
+	private static final int COL_INNER = 22;
+	private static final int BAR_WIDTH = 10;
+	private static final int CHEF_BAR_WIDTH = 8;
 
 	// ANSI 색상
 	private static final String RESET  = "\033[0m";
@@ -137,39 +137,37 @@ public class Dashboard implements Runnable {
 		}
 		line(sb, row.toString());
 
-		// ── 조리대 아래: 요리사 정보 (2줄 고정) ──
-		ChefWorker[] stationChefs = new ChefWorker[cols];
+		// ── 조리대 아래: 요리사 정보 (요리사 수만큼 고정 줄) ──
+		java.util.List<ChefWorker> allChefs = kitchen.getChiefs();
+		int maxChefRows = allChefs.size();
+
+		// 메뉴별 요리사 목록 수집
+		@SuppressWarnings("unchecked")
+		java.util.List<ChefWorker>[] chefsPerMenu = new java.util.List[cols];
 		for (int i = 0; i < cols; i++) {
-			stationChefs[i] = findChefForMenu(menus[i]);
+			chefsPerMenu[i] = findChefsForMenu(menus[i]);
 		}
 
-		// 줄 1: 요리사 이름 + 주문번호
-		row = new StringBuilder("║  ");
-		for (int i = 0; i < cols; i++) {
-			if (i > 0) row.append(" ");
-			ChefWorker chef = stationChefs[i];
-			if (chef != null) {
-				Order order = chef.getCurrentOrder();
-				String info = YELLOW + "요리사#" + chef.getId() + RESET + " #" + order.getOrderId();
-				row.append(padRight(info, colTotal));
-			} else {
-				row.append(padRight(GRAY + "비어있음" + RESET, colTotal));
+		// 요리사 수만큼 줄 출력
+		for (int r = 0; r < maxChefRows; r++) {
+			row = new StringBuilder("║  ");
+			for (int i = 0; i < cols; i++) {
+				if (i > 0) row.append(" ");
+				if (r < chefsPerMenu[i].size()) {
+					ChefWorker chef = chefsPerMenu[i].get(r);
+					Order order = chef.getCurrentOrder();
+					String bar = chefProgressBar(chef.getProgress());
+					String info = YELLOW + "#" + chef.getId() + RESET
+						+ " #" + order.getOrderId() + " " + bar;
+					row.append(padRight(info, colTotal));
+				} else if (r == 0 && chefsPerMenu[i].isEmpty()) {
+					row.append(padRight(GRAY + "비어있음" + RESET, colTotal));
+				} else {
+					row.append(padRight("", colTotal));
+				}
 			}
+			line(sb, row.toString());
 		}
-		line(sb, row.toString());
-
-		// 줄 2: 조리 진행바
-		row = new StringBuilder("║  ");
-		for (int i = 0; i < cols; i++) {
-			if (i > 0) row.append(" ");
-			ChefWorker chef = stationChefs[i];
-			if (chef != null) {
-				row.append(padRight(chefProgressBar(chef.getProgress()), colTotal));
-			} else {
-				row.append(padRight("", colTotal));
-			}
-		}
-		line(sb, row.toString());
 
 		line(sb, "║");
 		line(sb, "╠" + sep);
@@ -192,13 +190,14 @@ public class Dashboard implements Runnable {
 		System.out.flush();
 	}
 
-	private ChefWorker findChefForMenu(MenuItem menu) {
+	private java.util.List<ChefWorker> findChefsForMenu(MenuItem menu) {
+		java.util.List<ChefWorker> result = new java.util.ArrayList<>();
 		for (ChefWorker chef : kitchen.getChiefs()) {
 			if (chef.isWorking() && chef.getCurrentMenu() == menu && chef.getCurrentOrder() != null) {
-				return chef;
+				result.add(chef);
 			}
 		}
-		return null;
+		return result;
 	}
 
 	private String coloredQueueBar(int current, int max) {
