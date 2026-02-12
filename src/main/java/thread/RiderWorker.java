@@ -7,7 +7,11 @@ public class RiderWorker implements Runnable{
 
 	private final int riderId;
 	private final OrderQueue deliveryQueue;
-	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RiderWorker.class);
+  
+  private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RiderWorker.class);
+
+	private volatile Order currentOrder;
+	private volatile boolean delivering;
 
 	public RiderWorker(int riderId, OrderQueue deliveryQueue) {
 		this.riderId = riderId;
@@ -22,6 +26,8 @@ public class RiderWorker implements Runnable{
 			try {
 				// 1. 배달 큐(deliveryQueue)에서 완성된 Order를 꺼냄 (pop)
 				Order order = deliveryQueue.pop();
+				currentOrder = order;
+				delivering = true;
 
 				// 2. 배달 시작 로그 기록
 				logger.info("#" + riderId + "번 배달 출발 (주소: " + order.getAddress() + ")");
@@ -33,19 +39,37 @@ public class RiderWorker implements Runnable{
 				// 4. 배달 완료 로그 기록
 				logger.info("#" + riderId + "번 배달 완료!");
 
-				// 5. 다음 배달을 위해 대기
-				// -> OrderQueue 에서 take() 하면 자동으로 WAINTING 상태로 처리됨.
+				// 5. 상태 초기화
+				delivering = false;
+				currentOrder = null;
 
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Thread.currentThread().interrupt();
+				break;
 			}
-
 
 		}
 
 	}
 
+	public int getRiderId() {
+		return riderId;
+	}
+
+	public Order getCurrentOrder() {
+		return currentOrder;
+	}
+
+	public boolean isDelivering() {
+		return delivering;
+	}
+
+	public String getStatusString() {
+		if (delivering && currentOrder != null) {
+			return String.format("배달원#%d: 주문#%d 배달중 → %s",
+				riderId, currentOrder.getOrderId(), currentOrder.getAddress());
+		}
+		return String.format("배달원#%d: 대기중", riderId);
+	}
+
 }
-
-

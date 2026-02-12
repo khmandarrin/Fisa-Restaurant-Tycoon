@@ -2,6 +2,7 @@ import core.DeliveryCenter;
 import core.Kitchen;
 import core.OrderGenerator;
 import core.QueueManager;
+import view.Dashboard;
 
 public class Main {
 	public static void main(String[] args) {
