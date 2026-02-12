@@ -30,8 +30,8 @@ src/main/java/com/tycoon/
 │   ├── MenuItem.java         # Enum: 메뉴별 조리 시간 정의
 │   └── OrderQueue.java       # BlockingQueue 래퍼 클래스
 ├── thread/                   
-│   ├── ChefWorker.java     # Consumer 1: 라운드 로빈 조리 수행
-│   └── RiderWorker.java      # Consumer 2: 배달 처리 수행
+│   ├── ChefWorker.java       # 요리사 스레드
+│   └── RiderWorker.java      # 배달원 스레드
 └── view/                     
     └── Dashboard.java        # 콘솔 출력
 
