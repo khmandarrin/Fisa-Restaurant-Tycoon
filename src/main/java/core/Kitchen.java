@@ -12,10 +12,14 @@ public class Kitchen {
     private final List<Thread> chiefThreads = new ArrayList<>();
     private QueueManager queueManager;
 
-    public void start(int chefCount, QueueManager queueManager) {
-        this.chefCount = chefCount;
-        this.queueManager = queueManager;
+    
+    public Kitchen(int chefCount, QueueManager queueManager) {
+		super();
+		this.chefCount = chefCount;
+		this.queueManager = queueManager;
+	}
 
+	public void startOperations() {
         // 요리사 투입
         for (int i = 0; i < chefCount; i++) {
             ChefWorker chef = new ChefWorker(i, queueManager);
