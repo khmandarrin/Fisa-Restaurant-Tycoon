@@ -30,7 +30,7 @@ public class ChefWorker implements Runnable {
                 Order order = findWork();
                 
                 if (order == null) {
-                    Thread.sleep(100);  // 일감 없으면 잠깐 대기
+//                    Thread.sleep(100);  // 일감 없으면 잠깐 대기
                     continue;
                 }
                 
