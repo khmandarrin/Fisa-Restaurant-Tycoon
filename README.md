@@ -99,6 +99,22 @@ private final BlockingQueue<Order> queue = new LinkedBlockingQueue<>();
 1. **긴급 처리 (Backpressure)**: 특정 메뉴 큐의 크기가 임계치(80%)를 초과할 경우, 주문 번호와 상관없이 해당 큐를 최우선으로 처리하여 시스템 병목을 해소합니다.
 2. **순차 처리 (FCFS)**: 긴급 상황이 아닐 시, 모든 큐를 전수 조사하여 주문 번호(Order ID)가 가장 낮은 작업을 선택함으로써 선입선출 원칙을 준수합니다.
 
+```java
+// src/main/java/thread/ChefWorker.java
+
+private Order findWork() {
+    synchronized (queueManager) {
+        // 1. 큐 포화도 기반 긴급 작업 탐색
+        Order urgentOrder = findUrgentOrder();
+        if (urgentOrder != null) {
+            return urgentOrder;
+        }
+
+        // 2. 주문 번호 기반 일반 작업 탐색
+        return findEarliestOrder();
+    }
+}
+```
 
 ## 5. 실행 방법 
 
