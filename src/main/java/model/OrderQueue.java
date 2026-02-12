@@ -32,5 +32,8 @@ public class OrderQueue {
 		return queueName;
 	}
 	
+	public Order peek() {
+	    return queue.peek();  // 꺼내지 않고 맨 앞 확인
+	}
 	
 }
