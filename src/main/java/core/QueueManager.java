@@ -12,13 +12,13 @@ public class QueueManager {
     // 모든 조리가 완료된 주문이 들어가는 큐
     private final OrderQueue deliveryQueue;
 
-    public QueueManager() {
+    public QueueManager(int menuQueueSize, int deliveryQueueSize) {
         this.menuQueues = new EnumMap<>(MenuItem.class);
-        this.deliveryQueue = new OrderQueue("배달 대기열");
+        this.deliveryQueue = new OrderQueue("deliveryQueue", deliveryQueueSize);
 
         // MenuItem Enum에 정의된 모든 메뉴에 대해 각각의 큐를 생성
         for (MenuItem item : MenuItem.values()) {
-            menuQueues.put(item, new OrderQueue(item.getName().toLowerCase() + "Queue"));
+            menuQueues.put(item, new OrderQueue(item.getName().toLowerCase() + "Queue", menuQueueSize));
         }
     }
 

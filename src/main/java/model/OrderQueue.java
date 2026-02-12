@@ -5,14 +5,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class OrderQueue {
 	private final String queueName;
-	private final BlockingQueue<Order> queue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<Order> queue;
 
-	public OrderQueue(String queueName) {
+	public OrderQueue(String queueName, int size) {
 		this.queueName = queueName;
+		this.queue = new LinkedBlockingQueue<>(size);
 	}
 
-	public void push(Order order) {
-		queue.offer(order);
+	public void push(Order order) throws InterruptedException {
+		queue.put(order);
 	}
 
 	public Order pop() throws InterruptedException {

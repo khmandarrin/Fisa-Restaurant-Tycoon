@@ -3,7 +3,7 @@ import core.QueueManager;
 
 public class Main {
 	public static void main(String[] args) {
-		QueueManager queueManager = new QueueManager();
+		QueueManager queueManager = new QueueManager(10, 20);
 		OrderGenerator orderGenerator = new OrderGenerator(queueManager);
 		Thread thread = new Thread(orderGenerator);
 		thread.start();
