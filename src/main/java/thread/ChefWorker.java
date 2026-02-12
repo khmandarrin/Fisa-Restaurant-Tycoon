@@ -5,7 +5,7 @@ import model.MenuItem;
 import model.Order;
 import model.OrderQueue;
 
-public class ChiefWorker implements Runnable {
+public class ChefWorker implements Runnable {
 	
     private final int id;
     private final QueueManager queueManager;
@@ -16,7 +16,7 @@ public class ChiefWorker implements Runnable {
     private MenuItem currentMenu;
     private int progress;
 
-    public ChiefWorker(int id, QueueManager queueManager) {
+    public ChefWorker(int id, QueueManager queueManager) {
         this.id = id;
         this.queueManager = queueManager;
     }
@@ -83,6 +83,15 @@ public class ChiefWorker implements Runnable {
     
     public void stop() {
         running = false;
+    }
+    
+    public String getStatusString() {
+        if (isWorking()) {
+            return String.format("요리사#%d: 주문#%d %s 조리중 [%d%%]", 
+                id, currentOrder.getOrderId(), currentMenu.getName(), progress);
+        } else {
+            return String.format("요리사#%d: 대기중", id);
+        }
     }
     
     // 대시보드용 Getter

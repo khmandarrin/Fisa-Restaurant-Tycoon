@@ -12,6 +12,7 @@ target/
 .classpath
 .factorypath
 .metadata
+.DS_Store
 
 # 로그 파일 및 임시 파일
 *.log
