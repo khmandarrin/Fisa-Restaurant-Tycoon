@@ -19,6 +19,10 @@ public class OrderQueue {
 	public Order pop() throws InterruptedException {
 		return queue.take(); // 작업이 없으면 스레드가 여기서 대기함
 	}
+	
+    public Order poll() {
+        return queue.poll();  // non-blocking, 없으면 null
+    }
 
 	public int size() {
 		return queue.size();
@@ -27,4 +31,6 @@ public class OrderQueue {
 	public String getQueueName() {
 		return queueName;
 	}
+	
+	
 }
