@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import thread.ChefWorker;
+import view.Logger;
 
 public class Kitchen {
     private int chefCount;
@@ -25,7 +26,7 @@ public class Kitchen {
             chiefThreads.add(thread);
         }
         
-        System.out.println("[주방] 요리사 " + chefCount + "명 투입 완료");
+        Logger.log("[주방] 요리사 " + chefCount + "명 투입 완료");
     }
 
     public List<String> getStatusReport() {
@@ -42,7 +43,7 @@ public class Kitchen {
         for (ChefWorker chief : chefs) {
         	chief.stop();
         }
-        System.out.println("[주방] 영업 종료");
+        Logger.log("[주방] 영업 종료");
     }
 
     public List<ChefWorker> getChiefs() {

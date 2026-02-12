@@ -4,19 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import thread.RiderWorker;
-import view.Logger;
 
 public class DeliveryCenter {
     private final int riderCount;
     private final QueueManager queueManager;
     private final List<RiderWorker> riders;
-    private final Logger logger;
 
-    public DeliveryCenter(int riderCount, QueueManager queueManager, Logger logger) {
+    public DeliveryCenter(int riderCount, QueueManager queueManager) {
         this.riderCount = riderCount;
         this.queueManager = queueManager;
         this.riders = new ArrayList<>();
-        this.logger = logger;
     }
 
     /**
@@ -25,7 +22,7 @@ public class DeliveryCenter {
     public void startOperations() {
         for (int i = 1; i <= riderCount; i++) {
             // 배달원은 배달 전용 큐 하나만 주시하면 됩니다.
-            RiderWorker rider = new RiderWorker(i, queueManager.getDeliveryQueue(), logger);
+            RiderWorker rider = new RiderWorker(i, queueManager.getDeliveryQueue());
             Thread thread = new Thread(rider, "Rider-" + i);
             thread.start();
             riders.add(rider);
