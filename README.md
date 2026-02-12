@@ -39,7 +39,13 @@ src/main/java/com/tycoon/
 
 ## 3. 워크플로우
 
+### Class Diagram
+<img src="./assets/mermaid-diagram-2026-02-12-223519.png" width="1000" alt="클래스다이어그램">
+
+### Sequence Diagram
 <img src="./assets/sequence.png" width="800" alt="시퀀스다이어그램">
+
+
 
 ## 4. 핵심 기술 설계 
 
