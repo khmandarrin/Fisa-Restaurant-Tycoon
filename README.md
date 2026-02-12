@@ -36,9 +36,10 @@ src/main/java/com/tycoon/
 
 ```
 
-## 3. 클래스 다이어그램 
+## 3. 시퀀스 다이어그램 
 
 시퀀스 다이어그램? 
+![시퀀스다이어그램](assets/sequence.png)
 
 
 ## 4. 핵심 기술 설계 
