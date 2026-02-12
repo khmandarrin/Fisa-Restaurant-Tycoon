@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import thread.ChefWorker;
-import view.Logger;
 
 public class Kitchen {
     private int chefCount;
     private final List<ChefWorker> chefs = new ArrayList<>();
     private final List<Thread> chiefThreads = new ArrayList<>();
     private QueueManager queueManager;
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(Kitchen.class);
 
     
     public Kitchen(int chefCount, QueueManager queueManager) {
@@ -30,7 +30,7 @@ public class Kitchen {
             chiefThreads.add(thread);
         }
         
-        Logger.log("[주방] 요리사 " + chefCount + "명 투입 완료");
+        logger.info("[주방] 요리사 " + chefCount + "명 투입 완료");
     }
 
     public List<String> getStatusReport() {
@@ -47,7 +47,7 @@ public class Kitchen {
         for (ChefWorker chief : chefs) {
         	chief.stop();
         }
-        Logger.log("[주방] 영업 종료");
+        logger.info("[주방] 영업 종료");
     }
 
     public List<ChefWorker> getChiefs() {
