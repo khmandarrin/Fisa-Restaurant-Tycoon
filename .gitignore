@@ -12,7 +12,6 @@ target/
 .classpath
 .factorypath
 .metadata
-.DS_Store
 
 # 로그 파일 및 임시 파일
 *.log
@@ -22,3 +21,7 @@ temp/
 # Maven 관련 추가 파일
 .mvn/wrapper/
 maven-shared-archive-resources/
+
+/assets/.DS_Store
+
+.DS_Store

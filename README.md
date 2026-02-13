@@ -8,8 +8,23 @@
 
 ## 1. 프로젝트 개요
 
-복수의 요리사(Chef)와 배달원(Rider) 스레드가 공유 자원인 주문 큐를 통해 데이터를 처리하는 시스템입니다. 
-하나의 주문이 여러 개의 메뉴로 구성될 때, 다수의 요리사가 이를 병렬로 처리하고 최종적으로 하나의 주문으로 병합하여 배달 단계로 넘기는 동기화 메커니즘으로 설계되었습니다.
+### 프로젝트 구성 및 역할
+
+* 👨🏻‍🍳 **요리사 (ChefWorker)**
+    * **메뉴 병렬 처리**: 고객이 주문한 다양한 메뉴(커피, 피자, 파스타 등)가 각각의 전용 메뉴 큐에 쌓이면, 여러 요리사가 이를 동시에 나누어 조리합니다.
+    * **주문 병합 및 이관**: 자신이 담당한 메뉴의 조리가 끝날 때마다 상태를 갱신하며, 주문에 포함된 모든 메뉴가 완성되었는지 확인합니다. 마지막 메뉴까지 조리가 끝나면 해당 주문을 배달 큐로 넘깁니다.
+
+
+* 🚚 **배달원 (RiderWorker)**
+    * **완성 주문 수령**: 주방에서 조리가 모두 끝난 주문들만 모여 있는 배달 큐에서 대기합니다.
+    * **최종 전달**: 배달 큐에 들어온 주문을 순차적으로 가져가 고객에게 전달하며 전체 프로세스를 마무리합니다.
+
+### 시스템 데이터 흐름 요약
+
+1. **주문 접수**: 하나의 `Order`가 생성되어 구성 메뉴별로 각기 다른 **메뉴 큐**로 분산됩니다.
+2. **조리 단계**: **요리사 스레드**들이 메뉴 큐를 비우며 병렬로 작업을 수행합니다.
+3. **배달 단계**: 모든 메뉴가 모여 '완성' 상태가 된 주문을 **배달원 스레드**가 처리합니다.
+
 
 ## 2. 기술 스택 및 아키텍처
 
@@ -29,16 +44,21 @@ src/main/java/com/tycoon/
 │   ├── MenuItem.java         # Enum: 메뉴별 조리 시간 정의
 │   └── OrderQueue.java       # BlockingQueue 래퍼 클래스
 ├── thread/                   
-│   ├── ChefWorker.java     # Consumer 1: 라운드 로빈 조리 수행
-│   └── RiderWorker.java      # Consumer 2: 배달 처리 수행
+│   ├── ChefWorker.java       # 요리사 스레드
+│   └── RiderWorker.java      # 배달원 스레드
 └── view/                     
     └── Dashboard.java        # 콘솔 출력
 
 ```
 
-## 3. 클래스 다이어그램 
+## 3. 워크플로우
 
-시퀀스 다이어그램? 
+### Class Diagram
+<img src="./assets/mermaid-diagram-2026-02-12-223519.png" width="1000" alt="클래스다이어그램">
+
+### Sequence Diagram
+<img src="./assets/sequence.png" width="800" alt="시퀀스다이어그램">
+
 
 
 ## 4. 핵심 기술 설계 
@@ -51,42 +71,102 @@ src/main/java/com/tycoon/
 
 ### 4.2 동기화
 
+#### 1. AtomicInteger
+- 하나의 주문(`Order`)은 여러 개의 메뉴로 구성됩니다.
+- 각 메뉴는 서로 다른 요리사 스레드(`ChefWorker`)들이 병렬로 조리할 수 있습니다. 조리가 완료되면 `ChefWorker`는 주문(`Order`)의 `completedCount`를 증가시킵니다.
+- 조리 완료된 메뉴의 개수(`completedCount`)가 전체 주문 메뉴의 개수(`totalItems`)와 일치하면 해당 주문을 배달 큐로 보냅니다.
+- 여러 개의 스레드가 동시 접근할 위험이 있는 `completedCount` 변수를 `AtomicInteger`로 선언함으로써 동시성을 제어합니다. 이는 하드웨어 수준의 **CAS(Compare-And-Swap)** 연산을 이용하여 Race Condition을 방지합니다.
+```java
+// src/main/java/model/Order.java
 
-1. AtomicInteger
-이 프로젝트에서 하나의 주문(`Order`)은 여러 개의 메뉴(`List`)로 구성됩니다. 각 메뉴는 서로 다른 요리사들이 병렬로 조리할 수 있습니다.
-주문에 포함된 모든 메뉴가 조리되었는지 판별하기 위한 장치가 필요합니다. 조리가 끝날 때마다 카운트를 증가시켜, 이 값이 전체 메뉴 개수와 일치하는 순간에만 해당 주문을 '배달 가능' 상태로 전환하여 배달 큐로 보냅니다.
+private final AtomicInteger completedCount = new AtomicInteger(0);
+```
 
-* 일반 `int` 변수를 사용하면 두 요리사가 동시에 `count++`를 할 때, CPU 캐시 메모리 문제로 인해 2가 올라가야 할 상황에서 1만 올라가는 **경합 조건(Race Condition)**이 발생할 수 있습니다.
-* 이를 해결하기 위해 `AtomicInteger`를 사용하였습니다. 이는 하드웨어 수준의 **CAS(Compare-And-Swap)** 연산을 이용하여, 다른 스레드가 개입하지 못하도록 원자적으로 값을 증가시킵니다.
+#### 2. Synchronized
+* `ChefWorker`의 `findWork()`는 조리 시작 전 모든 메뉴 큐를 순회하며 최적의 작업을 결정하고 인출하는 탐색 메서드입니다.
+* 이 과정에서 `synchronized(allMenuQueues)`를 통해 QueueManager가 관리하는 모든 메뉴 큐에 대한 전역 락(Global Lock)을 획득합니다.
+* 이를 통해 작업을 확인(`peek`)하고 인출(`poll`)하는 시점까지의 원자성을 보장하는 임계 영역(Critical Section)을 형성합니다.
+* 동일한 주문을 여러 요리사가 동시에 수주하는 중복 점유 문제를 차단합니다.
 
-2. Synchronized
-`ChefWorker`의 `findWork()`는 요리사가 조리를 시작하기 전, 모든 메뉴 큐를 훑으며 자신이 처리할 최적의 작업(일감)을 결정하고 가져오는 탐색 메서드입니다.
-이 메서드에서 `synchronized(queueManager)`를 통해 주방의 모든 자원 관리 권한을 한 명의 요리사가 독점하도록 합니다.
-어떤 일감이 있는지 확인(`peek`)하고 그 일감을 집어가는(`poll`) 과정 사이에 다른 요리사가 개입하는 것을 차단합니다. 이를 통해 한 요리사가 락(Lock)을 획득하여 주문을 확정하는 동안 다른 요리사는 해당 코드 영역에 진입하지 못하고 대기(Blocked)하게 되어, 작업의 유일성이 보장됩니다.
+```java
+// src/main/java/thread/ChefWorker.java
 
-3. BlockingQueue
-생산자와 소비자의 작업 속도가 다를 때 시스템의 실행을 조율합니다.
-`BlockingQueue`의 `put()`과 `take()`(또는 `poll`)은 내부적으로 이미 동기화되어 있어, 한 번에 하나의 스레드만 안전하게 데이터를 넣거나 뺄 수 있음을 보장합니다.
-
-- 생산자(OrderGenerator): 주문이 너무 빨리 생성되어 큐가 꽉 차면, put() 메서드는 빈 공간이 생길 때까지 생산자 스레드를 자동으로 대기(Blocking)시킵니다.
-- 소비자(Chef/Rider): 처리할 일감이 없으면 poll()이나 take()가 대기 상태로 들어가, 일감이 들어오는 순간 즉시 깨어나 작업을 시작합니다.
-
+private Order findWork() {
+    ...
+    synchronized (allMenuQueues) {
+        // 2. 주문 번호 기반 일반 작업 탐색: peek and poll
+        return findEarliestOrder();
+    }
+```
 
 
+#### 3. BlockingQueue
+* 생산자와 소비자 스레드 간의 작업 처리 속도 차이를 조율하는 시스템 완충 장치입니다.
+* 내부적인 **Wait-Notify** 메커니즘을 통해 스레드 간 실행 타이밍을 동기화하며, 데이터 삽입 및 인출 연산의 원자성을 보장합니다.
+* **생산자(OrderGenerator)**: 큐가 임계치에 도달하여 가득 차면, 공간이 확보될 때까지 생산자 스레드를 자동으로 대기(Blocking)시켜 시스템 자원의 오버플로우를 방지합니다.
+* **소비자(Chef/Rider)**: 처리할 일감이 없으면 대기 상태로 진입하여 CPU 점유를 멈추고, 새로운 주문이 투입되는 즉시 깨어나(Wake-up) 작업을 수행합니다.
+- **복합적 역할(Chef)**: 요리사는 메뉴 큐의 소비자임과 동시에 배달 큐의 생산자입니다. 만약 배달 처리 속도가 지연되어 배달 큐가 꽉 찬다면, 조리를 마친 요리사는 배달 큐에 공간이 생길 때까지 대기하게 됩니다. 이를 통해 시스템 전체의 흐름이 처리 용량에 맞춰 유기적으로 제어됩니다.
+```java
+// src/main/java/model/OrderQueue.java
+
+private final BlockingQueue<Order> queue = new LinkedBlockingQueue<>();
+```
 
 
 ### 4.3 스케줄링 
-효율적인 주방 운영을 위해 셰프(ChefWorker)가 요리할 메뉴를 선택하는 기준에는 다음과 같은 우선순위를 적용합니다.
+효율적인 주방 운영을 위해 셰프(`ChefWorker`)가 요리할 메뉴를 선택하는 기준에는 다음과 같은 우선순위를 적용합니다.
 
 1. **긴급 처리 (Backpressure)**: 특정 메뉴 큐의 크기가 임계치(80%)를 초과할 경우, 주문 번호와 상관없이 해당 큐를 최우선으로 처리하여 시스템 병목을 해소합니다.
 2. **순차 처리 (FCFS)**: 긴급 상황이 아닐 시, 모든 큐를 전수 조사하여 주문 번호(Order ID)가 가장 낮은 작업을 선택함으로써 선입선출 원칙을 준수합니다.
 
+```java
+// src/main/java/thread/ChefWorker.java
 
-## 5. 실행 방법 
+private Order findWork() {
+
+    // 1. 큐 포화도 기반 긴급 작업 탐색
+    Order urgentOrder = findUrgentOrder();
+    if (urgentOrder != null) {
+        return urgentOrder;
+    }
+
+    // 2. 주문 번호 기반 일반 작업 탐색: peek and poll
+    Map<MenuItem, OrderQueue> allMenuQueues = queueManager.getAllMenuQueues();
+    synchronized (allMenuQueues) {
+        return findEarliestOrder();
+    }
+```
+
+## 5. 백프레셔(Backpressure) 시나리오
+
+#### 시나리오 1: 입구 병목 (주문 과부하)
+
+"만드는 속도보다 들어오는 속도가 빠를 때" 발생하는 현상입니다.
+
+* **상황**: 요리사들이 요리를 완성하는 속도보다 `OrderGenerator`가 주문을 밀어넣는 속도가 더 빠를 경우입니다.
+* **결과**: 메뉴 큐가 꽉 차게 되면, 주문을 생성하던 스레드는 큐에 빈 자리가 생길 때까지 그 자리에서 대기합니다.
+* **효과**: 주방이 감당할 수 있는 수준까지만 주문을 접수하여 시스템이 마비되는 것을 방지합니다.
+
+
+
+#### 시나리오 2: 출구 병목 (배달 지연으로 인한 연쇄 정체)
+
+"나가는 길이 막혀서 주방 전체가 줄줄이 멈출 때" 발생하는 현상입니다.
+
+1. **배달 정체**: 배달원들이 주문을 다 처리하지 못해 **배달 대기 큐**가 가득 찹니다.
+2. **조리실 정지**: 요리를 다 끝낸 요리사가 음식을 배달 선반(배달 큐)에 올리려 하지만, 자리가 없어서 음식을 든 채로 멈춰 서게 됩니다.
+3. **재료 준비 정지**: 요리사가 다음 요리를 시작하지 못하므로 메뉴 큐에서 일감을 가져가지 않게 되고, 결국 메뉴 큐까지 가득 찹니다.
+4. **주문 접수 중단**: 마지막으로 주문을 넣으려던 `OrderGenerator`까지 멈추면서, **배달이 하나 완료되어야만 요리가 끝나고, 요리가 끝나야만 새 주문이 들어오는** 연쇄적인 흐름 제어가 일어납니다.
+
+
+
+
+## 6. 실행 방법 
 
 프로그램 실행 시 인자로 요리사의 수와 배달원의 수를 전달합니다.
 
 ```bash
-mvn exec:java -Dexec.mainClass="Main" -Dexec.args="--chefCount 3 --riderCount 2"
+chcp 65001 # windows terminal에서 실행 시 인코딩 설정 필요
+mvn compile exec:java -Dexec.mainClass="Main" -Dfile.encoding="UTF-8" -Dexec.args="--chefCount 3 --riderCount 2"
 ```
 
