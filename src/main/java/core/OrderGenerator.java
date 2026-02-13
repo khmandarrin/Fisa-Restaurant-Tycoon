@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import model.MenuItem;
 import model.Order;
@@ -47,12 +48,18 @@ public class OrderGenerator implements Runnable {
                     }
                 }
                 // 3. 로그 기록
-                logger.info("신규 주문 접수: #" + newOrder.getOrderId() +
-                                " (" + newOrder.getItems().size() + "개 메뉴)");
+                String menuList = newOrder.getItems().stream()
+                        .map(MenuItem::getName) 
+                        .collect(Collectors.joining(", "));
 
-                // 4. 다음 주문까지 무작위 대기 (1.5초 ~ 3초)
-                Thread.sleep(1500 + random.nextInt(1500));
+                logger.info("신규 주문 접수: #{} (메뉴: {})", 
+                        newOrder.getOrderId(), 
+                        menuList);
 
+                // 4. 다음 주문까지 무작위 대기
+//                Thread.sleep(1000 + random.nextInt(1000));
+                Thread.sleep(100 + random.nextInt(100));
+                
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

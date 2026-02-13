@@ -35,7 +35,8 @@ public class RiderWorker implements Runnable{
 				logger.info("#" + riderId + "번 배달 출발 (주소: " + order.getAddress() + ")");
 
 				// 3. 배달 시간 시뮬레이션: SLEEP(랜덤 10~15초)
-				int deliveryTime = 10000 + (int)(Math.random() * 5000);
+//				int deliveryTime = 10000 + (int)(Math.random() * 5000);
+				int deliveryTime = 20000 + (int)(Math.random() * 5000); 
 				Thread.sleep(deliveryTime);
 
 				// 4. 배달 완료 로그 기록

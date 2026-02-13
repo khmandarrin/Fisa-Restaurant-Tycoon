@@ -1,5 +1,7 @@
 package thread;
 
+import java.util.Map;
+
 import core.QueueManager;
 import model.MenuItem;
 import model.Order;
@@ -30,7 +32,7 @@ public class ChefWorker implements Runnable {
 				Order order = findWork();
 
 				if (order == null) {
-                    Thread.sleep(100);  // 일감 없으면 잠깐 대기
+					Thread.sleep(100); // 일감 없으면 잠깐 대기
 					continue;
 				}
 
@@ -57,26 +59,30 @@ public class ChefWorker implements Runnable {
 	}
 
 	/**
-     * 메뉴 큐를 탐색하여 최적의 조리 작업을 결정하고 인출.
-     * * 우선순위 정책:
-     * 1. 큐 포화도 기반 긴급 처리: 임계치를 초과하여 쌓인 메뉴를 최우선으로 처리
-     * 2. 주문 번호 기반 순차 처리: 대기 중인 모든 메뉴 중 주문 번호가 가장 빠른 것을 선택
-     * * 동기화 처리: {@code queueManager} 객체를 통한 전역 동기화
-     * * @return 결정된 조리 작업(Order), 대기 중인 작업이 없을 경우 null
-     */
+	 * 메뉴 큐를 탐색하여 최적의 조리 작업을 결정하고 인출. 
+	 * * 우선순위 정책: 
+	 * 1. 큐 포화도 기반 긴급 처리: 임계치를 초과하여 쌓인 메뉴를
+	 * 최우선으로 처리 2
+	 * . 주문 번호 기반 순차 처리: 대기 중인 모든 메뉴 중 주문 번호가 가장 빠른 것을 선택 
+	 * * 동기화 처리:
+	 * {@code queueManager} 객체를 통한 전역 동기화 
+	 * * @return 결정된 조리 작업(Order), 대기 중인 작업이 없을
+	 * 경우 null
+	 */
 	private Order findWork() {
-		synchronized (queueManager) {
-			// 1. 큐 포화도 기반 긴급 작업 탐색
-			Order urgentOrder = findUrgentOrder();
-			if (urgentOrder != null) {
-				return urgentOrder;
-			}
 
-			// 2. 주문 번호 기반 일반 작업 탐색
+		// 1. 큐 포화도 기반 긴급 작업 탐색
+		Order urgentOrder = findUrgentOrder();
+		if (urgentOrder != null) {
+			return urgentOrder;
+		}
+		
+		// 2. 주문 번호 기반 일반 작업 탐색: peek and poll
+		Map<MenuItem, OrderQueue> allMenuQueues = queueManager.getAllMenuQueues();
+		synchronized (allMenuQueues) {
 			return findEarliestOrder();
 		}
 	}
-
 
 	// 설정된 임계치(80% 이상)를 초과한 큐가 있는지 확인하고 가장 먼저 발견된 긴급 작업을 반환
 	private Order findUrgentOrder() {
@@ -95,7 +101,6 @@ public class ChefWorker implements Runnable {
 		}
 		return null;
 	}
-
 
 	// 모든 메뉴 큐를 순회하여 대기 중인 주문 중 주문 번호(Order ID)가 가장 빠른 작업을 찾아 반환
 	private Order findEarliestOrder() {

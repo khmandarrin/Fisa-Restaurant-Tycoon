@@ -11,8 +11,12 @@ public class QueueManager {
     private final Map<MenuItem, OrderQueue> menuQueues;
     // 모든 조리가 완료된 주문이 들어가는 큐
     private final OrderQueue deliveryQueue;
+    private final int menuQueueSize;
+    private final int deliveryQueueSize;
 
     public QueueManager(int menuQueueSize, int deliveryQueueSize) {
+    	this.deliveryQueueSize = deliveryQueueSize;
+    	this.menuQueueSize = menuQueueSize;
         this.menuQueues = new EnumMap<>(MenuItem.class);
         this.deliveryQueue = new OrderQueue("deliveryQueue", deliveryQueueSize);
 

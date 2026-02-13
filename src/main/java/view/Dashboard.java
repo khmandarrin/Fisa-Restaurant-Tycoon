@@ -184,7 +184,7 @@ public class Dashboard implements Runnable {
 
 		// ── 배달 ──
 		int dqSize = queueManager.getDeliveryQueue().size();
-		line(sb, "║  🛵 " + BOLD + "배달" + RESET + "  📦 완성 대기: " + dqSize + "/20");
+		line(sb, "║  🛵 " + BOLD + "배달" + RESET + "  📦 완성 대기: " + dqSize + "/5");
 		for (RiderWorker rider : deliveryCenter.getRiderStatus()) {
 			if (rider.isDelivering()) {
 				line(sb, "║    🟢 " + GREEN + rider.getStatusString() + RESET);

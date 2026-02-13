@@ -11,7 +11,7 @@ public class Main {
 	        int chefCount = 3;
 	        int riderCount = 2;
 
-	        // 2. 인자 파싱 (Loop를 돌며 키워드 확인)
+	        // 2. chef와 rider 수를 인자로 받기
 	        for (int i = 0; i < args.length; i++) {
 	            try {
 	                if ("--chefCount".equals(args[i]) && i + 1 < args.length) {
@@ -30,12 +30,19 @@ public class Main {
 	        System.out.println("설정된 배달원 수: " + riderCount);
 
 	        // 3. 시스템 초기화 및 의존성 주입
+	        // 큐 사이즈 고정
 	        int menuQueueSize = 10;
-	        int deliveryQueueSize = 2; // fix queue size
+	        int deliveryQueueSize = 5; 
+	        
+	        // 큐 생성
 	        QueueManager queueManager = new QueueManager(menuQueueSize, deliveryQueueSize);
+	        
+	        // core 객체 생성
 	        Kitchen kitchen = new Kitchen(chefCount, queueManager);
 	        DeliveryCenter deliveryCenter = new DeliveryCenter(riderCount, queueManager);
 	        OrderGenerator orderGenerator = new OrderGenerator(queueManager);
+	        
+	        // 콘솔 프린트를 위한 Dashboard 생성
 	        Dashboard dashboard = new Dashboard(kitchen, deliveryCenter, queueManager, orderGenerator);
 
 	        // 4. 스레드 가동
